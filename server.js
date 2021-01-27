@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
-    origin: "http://avalonconnect.herokuapp.com/",
+    origin: "avalonconnect.herokuapp.com/",
     methods: ["GET", "POST"],
   },
 });
