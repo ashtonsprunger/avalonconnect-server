@@ -1,6 +1,12 @@
 const express = require("express");
 const http = require("http");
 const socketio = require("socket.io");
+const {
+  userJoin,
+  getCurrentUser,
+  userLeave,
+  getRoomUsers,
+} = require("./utils/users");
 
 const router = require("./router");
 
@@ -8,7 +14,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
-    origin: "http://avalonconnect.herokuapp.com",
+    // origin: "http://avalonconnect.herokuapp.com", //! CHANGE BEFORE PUSHING
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
@@ -16,16 +23,25 @@ const io = socketio(server, {
 let count = 0;
 
 io.on("connection", (socket) => {
-  count += 1;
-  io.emit("count", count);
+  socket.on("joinRoom", ({ room, username }) => {
+    const user = userJoin(socket.id, username, room.toUpperCase());
+    socket.join(user.room);
 
-  socket.on("here", () => {
-    console.log("YESS");
+    io.to(user.room).emit("roomUsers", {
+      room: user.room,
+      users: getRoomUsers(user.room),
+    });
   });
 
   socket.on("disconnect", () => {
-    count -= 1;
-    io.emit("count", count);
+    const user = userLeave(socket.id);
+
+    if (user) {
+      io.to(user.room).emit("roomUsers", {
+        room: user.room,
+        users: getRoomUsers(user.room),
+      });
+    }
   });
 });
 
